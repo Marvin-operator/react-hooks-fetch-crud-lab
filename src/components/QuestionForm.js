@@ -1,93 +1,80 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 
-function QuestionForm(props) {
-  const [formData, setFormData] = useState({
-    prompt: "",
-    answer1: "",
-    answer2: "",
-    answer3: "",
-    answer4: "",
-    correctIndex: 0,
-  });
+const QuestionForm = ({ onAddQuestion }) => {
+  const [prompt, setPrompt] = useState('');
+  const [answers, setAnswers] = useState(['', '']);
+  const [correctIndex, setCorrectIndex] = useState(0);
 
-  function handleChange(event) {
-    setFormData({
-      ...formData,
-      [event.target.name]: event.target.value,
-    });
-  }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const newQuestion = {
+      prompt,
+      answers,
+      correctIndex,
+    };
 
-  function handleSubmit(event) {
-    event.preventDefault();
-    console.log(formData);
-  }
+    try {
+      const response = await fetch('http://localhost:4000/questions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newQuestion),
+      });
+      const addedQuestion = await response.json();
+      onAddQuestion(addedQuestion);
+    } catch (error) {
+      console.error('Error adding question:', error);
+    }
+
+    setPrompt('');
+    setAnswers(['', '']);
+    setCorrectIndex(0);
+  };
+
+  const handleAnswerChange = (index, value) => {
+    const newAnswers = [...answers];
+    newAnswers[index] = value;
+    setAnswers(newAnswers);
+  };
 
   return (
-    <section>
-      <h1>New Question</h1>
-      <form onSubmit={handleSubmit}>
-        <label>
-          Prompt:
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label>Prompt:</label>
+        <input
+          type="text"
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          required
+        />
+      </div>
+      <div>
+        <label>Answers:</label>
+        {answers.map((answer, index) => (
           <input
+            key={index}
             type="text"
-            name="prompt"
-            value={formData.prompt}
-            onChange={handleChange}
+            value={answer}
+            onChange={(e) => handleAnswerChange(index, e.target.value)}
+            required
           />
-        </label>
-        <label>
-          Answer 1:
-          <input
-            type="text"
-            name="answer1"
-            value={formData.answer1}
-            onChange={handleChange}
-          />
-        </label>
-        <label>
-          Answer 2:
-          <input
-            type="text"
-            name="answer2"
-            value={formData.answer2}
-            onChange={handleChange}
-          />
-        </label>
-        <label>
-          Answer 3:
-          <input
-            type="text"
-            name="answer3"
-            value={formData.answer3}
-            onChange={handleChange}
-          />
-        </label>
-        <label>
-          Answer 4:
-          <input
-            type="text"
-            name="answer4"
-            value={formData.answer4}
-            onChange={handleChange}
-          />
-        </label>
-        <label>
-          Correct Answer:
-          <select
-            name="correctIndex"
-            value={formData.correctIndex}
-            onChange={handleChange}
-          >
-            <option value="0">{formData.answer1}</option>
-            <option value="1">{formData.answer2}</option>
-            <option value="2">{formData.answer3}</option>
-            <option value="3">{formData.answer4}</option>
-          </select>
-        </label>
-        <button type="submit">Add Question</button>
-      </form>
-    </section>
+        ))}
+      </div>
+      <div>
+        <label>Correct Answer Index:</label>
+        <input
+          type="number"
+          value={correctIndex}
+          onChange={(e) => setCorrectIndex(parseInt(e.target.value))}
+          min="0"
+          max={answers.length - 1}
+          required
+        />
+      </div>
+      <button type="submit">Add Question</button>
+    </form>
   );
-}
+};
 
 export default QuestionForm;
